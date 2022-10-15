@@ -1,0 +1,143 @@
+---
+title: "ACT weather analysis"
+author: "Muntasir Adnan"
+date: "11/10/2022"
+output: html_document
+---
+
+# Load the dataset
+```{r}
+library(tidyverse)
+df <- read.csv("act_weather.csv")
+head(df)
+```
+# remove the first column
+```{r}
+df <- df[-c(1)]
+head(df)
+```
+# create a function that takes the column name as a parametre and prints minimum, median, mean and maximum
+```{r}
+getSummary <- function(colName)
+{
+  writeLines(paste(paste(colName, "summary:"),
+                   "================",
+                   paste("minimum : ", min(df[colName])),
+                   paste("median : ", median(df[[colName]])),
+                   paste("mean : ", mean(df[[colName]])),
+                   paste("maximum : ", max(df[colName])),
+                   sep = '\n'))
+  }
+```
+# make a vector to hold the column names, use make.names to convert them to correct name
+```{r}
+targetColumns <- c("Minimum_temperature",
+                  "9am_Temperature",
+                  "Speed_of_maximum_wind_gust_(km/h)",
+                  "3pm_Temperature")
+targetColumns <- make.names(targetColumns)
+```
+# run a loop to get the summary
+```{r}
+for (columnName in targetColumns)
+{
+  getSummary(columnName)
+}
+```
+# average minimum temperature of each month
+```{r}
+averageMinTemp <- df %>% 
+  group_by(Month, Year) %>%
+  summarise(avgMinTempByMonth = mean(Minimum_temperature))
+head(averageMinTemp)
+```
+# average of the speed of maximum wind gust per each group of direction
+```{r}
+averageWindGust <- df %>% 
+  group_by(Direction_of_maximum_wind_gust) %>% 
+  summarise(mean(Speed_of_maximum_wind_gust_.km.h.))
+head(averageWindGust)
+```
+# least amount of rainfall or dry month
+```{r}
+dryMonth <- df %>% 
+  group_by(Month, Year) %>% 
+  summarise(sumRainfall = sum(Rainfall_.mm.))
+dryMonth[which.min(dryMonth$sumRainfall),]
+```
+# function to calculate average humidity
+```{r}
+avgHumidity <- function(a, b)
+{
+  (a+b)/2
+}
+```
+
+# highest hiumidity in 2019
+```{r}
+highestHumid2019 <- df %>% 
+  filter(Year == 2019) %>% 
+  group_by(Month) %>% 
+  summarise(maxHumid = max(avgHumidity(X9am_relative_humidity_..., X3pm_relative_humidity_...)))
+highestHumid2019[which.max(highestHumid2019$maxHumid),]
+```
+# August 2020 to July 2021 summary table showing min, max and ave temp, wind speed, humidity for each month, for each quarter
+```{r}
+#get the subset
+data20to21 <- df %>% 
+  filter((Year == 2020 & Month >= 8)|(Year == 2021 & Month <= 7))
+
+#make numeric
+data20to21$X9am_wind_speed_.km.h. <- as.numeric(data20to21$X9am_wind_speed_.km.h.)
+data20to21$X3pm_wind_speed_.km.h. <- as.numeric(data20to21$X3pm_wind_speed_.km.h.)
+
+#fix NAs with mean
+data20to21$X9am_wind_speed_.km.h.[is.na(data20to21$X9am_wind_speed_.km.h.)] <- mean(data20to21$X9am_wind_speed_.km.h., 
+                                                                                    na.rm = TRUE)
+data20to21$X3pm_wind_speed_.km.h.[is.na(data20to21$X3pm_wind_speed_.km.h.)] <- mean(data20to21$X3pm_wind_speed_.km.h., 
+                                                                                    na.rm = TRUE)
+
+#create a new data set
+result <- data20to21 %>% 
+  group_by(Month, Year) %>% 
+  summarise(minTemp = min(Minimum_temperature), 
+            maxTemp = max(Maximum_temperature), 
+            aveTemp = mean((Maximum_temperature +Minimum_temperature)/2),
+            minWind = min(Speed_of_maximum_wind_gust_.km.h.), 
+            maxWind = max(Speed_of_maximum_wind_gust_.km.h.), 
+            avWindSpeed = mean((X9am_wind_speed_.km.h. + X3pm_wind_speed_.km.h.)/2),
+            avHumidity = mean((X3pm_relative_humidity_... + X9am_relative_humidity_...)/2),
+            maxHumid = if (max(X3pm_relative_humidity_...)> max(X9am_relative_humidity_...)) max(X3pm_relative_humidity_...) else max(X9am_relative_humidity_...),
+            minHumid = if (min(X3pm_relative_humidity_...)< min(X9am_relative_humidity_...)) min(X3pm_relative_humidity_...) else min(X9am_relative_humidity_...))
+
+#quarter
+resultQuarter <- data.frame(matrix(ncol = 9, nrow = 0))
+colnames(resultQuarter) <- c("minTemp", "maxTemp", "avTemp", "minWind", "maxWind", "avWind", "minHum", "maxHum", "avHum")
+for (i in c(1,4,7,10))
+{
+  temp <- c()
+  
+  temp <- append(temp, min(c(result$minTemp[i], result$minTemp[i+1], result$minTemp[i+2])))
+  temp <- append(temp, max(c(result$maxTemp[i], result$maxTemp[i+1], result$maxTemp[i+2])))
+  temp <- append(temp, mean(c(result$aveTemp[i], result$aveTemp[i+1], result$aveTemp[i+2])))
+  
+  temp <- append(temp, min(c(result$minWind[i], result$minWind[i+1], result$minWind[i+2])))
+  temp <- append(temp, max(c(result$maxWind[i], result$maxWind[i+1], result$maxWind[i+2])))
+  temp <- append(temp, mean(c(result$avWindSpeed[i], result$avWindSpeed[i+1], result$avWindSpeed[i+2])))
+  
+  temp <- append(temp, min(c(result$minHumid[i], result$minHumid[i+1], result$minHumid[i+2])))
+  temp <- append(temp, max(c(result$maxHumid[i], result$maxHumid[i+1], result$maxHumid[i+2])))
+  temp <- append(temp, mean(c(result$avHumidity[i], result$avHumidity[i+1], result$avHumidity[i+2])))
+  
+  resultQuarter[nrow(resultQuarter) + 1,] <- temp
+  
+}
+```
+# tests
+```{r}
+sum(is.na(data20to21$X3pm_relative_humidity_...))
+sum(is.na(data20to21$X9am_relative_humidity_...))
+result$minTemp[2]
+min(c(result$minTemp[1], result$minTemp[1+1], result$minTemp[1+2]))
+```
+
