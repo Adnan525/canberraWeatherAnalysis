@@ -1,29 +1,31 @@
 ---
-title: "ACT weather analysis"
+title: "ACT weather analysis_assignment2IDS"
 author: "Muntasir Adnan"
 date: "11/10/2022"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
-# Load the dataset into a dataframe named df
+## Load the dataset into a dataframe named df
 ```{r}
 library(dplyr)
 library(ggplot2)
 df <- read.csv("act_weather.csv")
 head(df)
 ```
-# remove the first column since it's just a copy of the index value
+Remove the first column since it's just a copy of the index value
 ```{r}
 df <- df[-c(1)]
 head(df)
 ```
-# chek the data has been loaded correctly
+Chek if the data has been loaded correctly
 ```{r}
 nrow(df)
 ncol(df)
 str(df)
 ```
-# create a function that takes the column name as a parametre and prints minimum, median, mean and maximum
+Create a function that takes the column name as a parametre and prints minimum, median, mean and maximum
 ```{r}
 getSummary <- function(colName)
 {
@@ -36,7 +38,7 @@ getSummary <- function(colName)
                    sep = '\n'))
   }
 ```
-# make a vector to hold the column names, use make.names to convert them to correct name
+Make a vector to hold the column names, use make.names to convert them to correct name
 ```{r}
 targetColumns <- c("Minimum_temperature",
                   "9am_Temperature",
@@ -44,36 +46,40 @@ targetColumns <- c("Minimum_temperature",
                   "3pm_Temperature")
 targetColumns <- make.names(targetColumns)
 ```
-# run a loop to get the summary using function getSummary
+## Run a loop to get the summary using function getSummary
 ```{r}
 for (columnName in targetColumns)
 {
   getSummary(columnName)
 }
 ```
-# average minimum temperature of each month
+
+## Average minimum temperature of each month
 ```{r}
 averageMinTemp <- df %>% 
   group_by(Month, Year) %>%
   summarise(avgMinTempByMonth = mean(Minimum_temperature))
 head(averageMinTemp)
 ```
-# average of the speed of maximum wind gust per each group of direction
-# grouped by wind direction
+
+## Average of the speed of maximum wind gust per each group of direction
+Grouped by wind direction
 ```{r}
 averageWindGust <- df %>% 
   group_by(Direction_of_maximum_wind_gust) %>% 
   summarise(mean(Speed_of_maximum_wind_gust_.km.h.))
 head(averageWindGust)
 ```
-# highest rainfall month
+
+## Highest rainfall month
 ```{r}
 highestRainFall <- df %>% 
   group_by(Month, Year) %>% 
   summarise(totalRainfall = sum(Rainfall_.mm.))
 highestRainFall[which.max(highestRainFall$totalRainfall),]
 ```
-# highest rainfall by year, using highestRainFall data frame created in the previous chunk
+
+## Highest rainfall by year, using highestRainFall data frame created in the previous chunk
 ```{r}
 highestRainFallByYear <- highestRainFall %>% 
   group_by(Year) %>% 
@@ -81,7 +87,8 @@ highestRainFallByYear <- highestRainFall %>%
 #By using which.max function got highest rainfall during those years with their index number and by printing the index number got the value for highest rainfall year.
 highestRainFallByYear[which.max(highestRainFallByYear$totalRainFall),]
 ```
-# least amount of rainfall or dry month
+
+## Least amount of rainfall or dry month
 ```{r}
 dryMonth <- df %>% 
   group_by(Month, Year) %>% 
@@ -95,7 +102,8 @@ no_rainfall_month <- dryMonth[which(dryMonth$sumRainfall == 0), "Month"]
 no_rainfall_year <- dryMonth[which(dryMonth$sumRainfall == 0), "Year"]
 #none
 ```
-# function to calculate an average between 2 numbers
+
+Function to calculate an average between 2 numbers
 ```{r}
 getAvg <- function(a, b)
 {
@@ -103,7 +111,7 @@ getAvg <- function(a, b)
 }
 ```
 
-# highest hiumidity in 2019
+## Highest hiumidity in 2019
 ```{r}
 highestHumid2019 <- df %>% 
   filter(Year == 2019) %>% 
@@ -111,16 +119,17 @@ highestHumid2019 <- df %>%
   summarise(maxHumid = max(getAvg(X9am_relative_humidity_..., X3pm_relative_humidity_...)))
 highestHumid2019[which.max(highestHumid2019$maxHumid),]
 ```
-# August 2020 to July 2021 summary table showing min, max and ave temp, wind speed, humidity for each month, for each quarter
-## getting a subset of df which has all the rows from August 2020 to July 2021 inclusive
+
+## August 2020 to July 2021 summary table showing min, max and ave temp, wind speed, humidity for each month, for each quarter
+Getting a subset of df which has all the rows from August 2020 to July 2021 inclusive
 ```{r}
 #get the subset
 data20to21 <- df %>% 
   filter((Year == 2020 & Month >= 8)|(Year == 2021 & Month <= 7))
 ```
-## wind speed columns has values as "Calm"
-## since only numeric data can be processed and it's not clear what the dataset means by "calm", I will replace them with mean
-## converting the column to numeric and replacing NAs with mean() will solve the issue
+* wind speed columns has values as "Calm"
+* since only numeric data can be processed and it's not clear what the dataset means by "calm", I will replace them with mean
+* converting the column to numeric and replacing NAs with mean() will solve the issue
 ```{r}
 #make numeric
 data20to21$X9am_wind_speed_.km.h. <- as.numeric(data20to21$X9am_wind_speed_.km.h.)
@@ -132,7 +141,8 @@ data20to21$X9am_wind_speed_.km.h.[is.na(data20to21$X9am_wind_speed_.km.h.)] <- m
 data20to21$X3pm_wind_speed_.km.h.[is.na(data20to21$X3pm_wind_speed_.km.h.)] <- mean(data20to21$X3pm_wind_speed_.km.h., 
                                                                                     na.rm = TRUE)
 ```
-# Getting min, max, average of temparature, wind speed and humidity by month
+
+## Getting min, max, average of temparature, wind speed and humidity by month
 ```{r}
 result <- data20to21 %>% 
   group_by(Month, Year) %>% 
@@ -145,8 +155,10 @@ result <- data20to21 %>%
             avHumidity = mean((X3pm_relative_humidity_... + X9am_relative_humidity_...)/2),
             maxHumid = if (max(X3pm_relative_humidity_...)> max(X9am_relative_humidity_...)) max(X3pm_relative_humidity_...) else max(X9am_relative_humidity_...),
             minHumid = if (min(X3pm_relative_humidity_...)< min(X9am_relative_humidity_...)) min(X3pm_relative_humidity_...) else min(X9am_relative_humidity_...))
+head(result)
 ```
-# Getting min, max, average of temparature, wind speed and humidity by quarter, a loop that increments by +2 will help
+
+## Getting min, max, average of temparature, wind speed and humidity by quarter, a loop that increments by +2 will help
 ```{r}
 #quarter
 resultQuarter <- data.frame(matrix(ncol = 10, nrow = 0))
@@ -172,9 +184,11 @@ for (i in c(1,4,7,10))
   resultQuarter[nrow(resultQuarter) + 1,] <- temp
   
 }
+head(resultQuarter)
 ```
-# plots month
-# temparature
+
+# Plots Month
+## temperature
 ```{r}
 result$Month <- as.factor(result$Month)
 monthTempPlot <- ggplot(result)+
@@ -188,7 +202,8 @@ monthTempPlot <- ggplot(result)+
   ggtitle("Distribution of the temperature from August 2020 to July 2021 monthly")
 monthTempPlot
 ```
-# wind
+
+## wind
 ```{r}
 monthWindPlot <- ggplot(result)+
   geom_point(aes(x=Month,y=avWindSpeed, colour = ""))+
@@ -201,7 +216,8 @@ monthWindPlot <- ggplot(result)+
   ggtitle("Distribution of wind speed in KM/h from August 2020 to July 2021 monthly")
 monthWindPlot
 ```
-# humidity
+
+## humidity
 ```{r}
 monthHumidPlot <- ggplot(result)+
   geom_point(aes(x=Month,y=avHumidity, colour = ""))+
@@ -214,8 +230,9 @@ monthHumidPlot <- ggplot(result)+
   ggtitle("Distribution of humidity from August 2020 to July 2021 monthly")
 monthHumidPlot
 ```
-# quarter
-# temparature
+
+# Quarter plots
+## temperature
 ```{r}
 quarterTempPlot <- ggplot(resultQuarter)+
   geom_point(aes(x=quarter,y=avTemp, colour = ""))+
@@ -228,7 +245,8 @@ quarterTempPlot <- ggplot(resultQuarter)+
   ggtitle("Distribution of temperature in C from August 2020 to July 2021 quarterly")
 quarterTempPlot
 ```
-# wind speed 
+
+## wind speed 
 ```{r}
 quarterWindPlot <- ggplot(resultQuarter)+
   geom_point(aes(x=quarter,y=avWind, colour = ""))+
@@ -241,7 +259,8 @@ quarterWindPlot <- ggplot(resultQuarter)+
   ggtitle("Distribution of wind-speed in KM/h from August 2020 to July 2021 quarterly")
 quarterWindPlot
 ```
-# humidity
+
+## humidity
 ```{r}
 quarterHumidityPlot <- ggplot(resultQuarter)+
   geom_point(aes(x=quarter,y=avHum, colour = ""))+
@@ -254,12 +273,13 @@ quarterHumidityPlot <- ggplot(resultQuarter)+
   ggtitle("Distribution of humidity from August 2020 to July 2021 quarterly")
 quarterHumidityPlot
 ```
-# climate change over the last 4 years
-## filter data from 2018 to 2021
+
+## climate change over the last 4 years
+Filter data from 2018 to 2021
 ```{r}
 targetYears <- filter(df, Year < 2022)
 ```
-## fix all the NA or "Calm" values with mean like in data20to21
+Fix all the NA or "Calm" values with mean like in data20to21
 ```{r}
 #make numeric
 targetYears$X9am_wind_speed_.km.h. <- as.numeric(targetYears$X9am_wind_speed_.km.h.)
@@ -271,12 +291,12 @@ targetYears$X9am_wind_speed_.km.h.[is.na(targetYears$X9am_wind_speed_.km.h.)] <-
 targetYears$X3pm_wind_speed_.km.h.[is.na(targetYears$X3pm_wind_speed_.km.h.)] <- mean(targetYears$X3pm_wind_speed_.km.h., 
                                                                                     na.rm = TRUE)
 ```
-## change month and year to factor
+Change month and year to factor
 ```{r}
-data_all$Year <- factor(data_all$Year)
-data_all$Month <- factor(data_all$Month)
+targetYears$Year <- factor(targetYears$Year)
+targetYears$Month <- factor(targetYears$Month)
 ```
-# Temparature Analysis
+**Temparature Analysis**
 ```{r}
 tempChangeTest <- targetYears %>% 
   group_by(Year) %>% 
@@ -292,8 +312,10 @@ tempChangeTest <- targetYears %>%
   ylab("Average Temperature C")+
   xlab("Year")
 ```
-# we can clearly see that over the last 4 years maximum temparature had chnaged in ACT where in 2020 it peaked at 44C from 36.8 in 2020
-#total rain fall
+
+*We can clearly see that over the last 4 years maximum temparature had chnaged in ACT where in 2020 it peaked at 44C from 36.8 in 2020*
+
+**Total rain fall**
 ```{r}
 rainfallTest <- targetYears %>% 
   group_by(Year) %>% 
@@ -305,8 +327,10 @@ ggplot(rainfallTest, aes(x = Year, y = sumRainFall))+
   xlab("Year")+
   ylab("Total Rain fall m.m.")
 ```
-# clearly we can see that over 4 years, rainfall has increased rapidly
-# humidity
+
+*clearly we can see that over 4 years, rainfall has increased rapidly*
+
+**humidity**
 ```{r}
 humidityTest <- targetYears %>% 
   group_by(Year) %>% 
@@ -319,5 +343,103 @@ ggplot(humidityTest, aes(x = Year, y = avHumYear))+
   xlab("Year")+
   ylab("Humidity")
 ```  
-# from the humidity plot, humidity increased consistently every year and had a significant jump in 2020 
-#conclusion: From the data, we can conclude that climate-change phenomenon has hit the ACT region in last 4 years and in 2020 it was worse, which is suggested by the temperature, humidity data.
+
+*from the humidity plot, humidity increased consistently every year and had a significant jump in 2020*
+
+*## conclusion: From the data, we can conclude that climate-change phenomenon has hit the ACT region in last 4 years and in 2020 it was worse, which is suggested by the temperature, humidity data.*
+
+# Data scientist problems:
+we will load the mtcars dataset and run a few analysis on the dataset
+```{r}
+data(mtcars)
+```
+## Possible problems that we can run analysis on:
+* what factors contribute how economical a car will be, or which sort of cars has best mpg, hence most economical
+* which cars are more likely to win a standard quarter mile drag race?
+* which cars has the quickest quarter mile time
+* To build a performance car, what would be the most important factors
+
+## problem 1:
+**Decision/Problem:** what factors contribute how economical a car will be, or which sort of cars has best mpg, hence most economical
+
+**Knowledge:** Number of factors like weight, number of gears, horse power, cylinder etc contribute to a car's MPG figures hence, decide how economical the car in question would be. Normally, heavier cars with less gear numbers tend to have high MPG, also high horse power can also indicate a high MPG
+
+**Information needed:** Know cars' MPG, number of cylinders, HP, weight, Gear
+
+**Data Analysis:**
+```{r}
+library(reshape2)
+corMT <- cor(mtcars)
+meltCorMT <- melt(corMT)
+ggplot(data = meltCorMT, aes(Var2, Var1, fill = value))+
+ geom_tile(color = "white")+
+  geom_text(aes(label = round(value, 1)), color = "black", size = 2) +
+ scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   name="Pearson\nCorrelation") +
+  theme_minimal()+ 
+ theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+    size = 12, hjust = 1))+
+  xlab("Features")+
+  ylab("Features")
+ coord_fixed()
+```
+
+**conclusion:** from the first column, we can see less cylinder, HP, weight means the car will be more economical, also Automatic cars seem to be more fuel saving and gear number does not seem to matter much when it comes to economy. Lastly, V-shaped engines are more economical than straightly aligned engines
+
+## Probelm 2:
+**Decision/Problem:** which cars are more likely to win a standard quarter mile drag race?
+
+**Knowledge:** qsec determines how likely a car is to win a drag race. Normally it's believed that the car with most horsepower, less weight will win the race. We can also check how important is the gear numbers, rear axle ratio, engine shape and transmission mode.
+
+**Information needed:** We will need all the performance figures of a car, a correlation heatmap along with a few graph will help us to determine the problem
+
+**Data Analysis:**
+## we can start with the correlation matrix
+```{r}
+#same as last problem
+library(reshape2)
+corMT <- cor(mtcars)
+meltCorMT <- melt(corMT)
+ggplot(data = meltCorMT, aes(Var2, Var1, fill = value))+
+ geom_tile(color = "white")+
+  geom_text(aes(label = round(value, 1)), color = "black", size = 2) +
+ scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+   midpoint = 0, limit = c(-1,1), space = "Lab", 
+   name="Pearson\nCorrelation") +
+  theme_minimal()+ 
+ theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+    size = 12, hjust = 1))+
+  xlab("Features")+
+  ylab("Features")
+ coord_fixed()
+```
+
+# qsec and horse power plot
+```{r}
+ggplot(mtcars, aes(hp, qsec))+
+  geom_point(shape=20,size=5,color="blue")+
+  geom_line()+
+  geom_smooth(method = "lm", color = "red")+
+  ggtitle("Affect of HP on Qsec")
+```
+
+# qsec and gear
+```{r}
+ggplot(mtcars, aes(vs, qsec))+
+  geom_point(shape=20,size=5,color="blue")+
+  geom_line()+
+  geom_smooth(method = "lm", color = "red")+
+  ggtitle("Affect of engine size/cylinder alignment on Qsec")
+```
+
+# how mpg is affected by qsec
+```{r}
+ggplot(mtcars, aes(mpg, qsec))+
+  geom_point(shape=20,size=5,color="blue")+
+  geom_line()+
+  geom_smooth(method = "lm", color = "red")+
+  ggtitle("Affect of qsec on MPG")
+```
+
+**Conclusion:** We can conclude that light cars with more horse power are the quickest. Also V-shaped engines are not only economical but also faster than in-line engines. Surprisingly, transmission type does not matter for qsec. Lastly, even though quick cars tend to have more horse power, they are not too bad in terms of economy. It's likely that their lightness contribute to that a lot.
