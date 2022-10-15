@@ -108,7 +108,7 @@ getAvg <- function(a, b)
 highestHumid2019 <- df %>% 
   filter(Year == 2019) %>% 
   group_by(Month) %>% 
-  summarise(maxHumid = max(avgHumidity(X9am_relative_humidity_..., X3pm_relative_humidity_...)))
+  summarise(maxHumid = max(getAvg(X9am_relative_humidity_..., X3pm_relative_humidity_...)))
 highestHumid2019[which.max(highestHumid2019$maxHumid),]
 ```
 # August 2020 to July 2021 summary table showing min, max and ave temp, wind speed, humidity for each month, for each quarter
@@ -178,30 +178,80 @@ for (i in c(1,4,7,10))
 ```{r}
 result$Month <- as.factor(result$Month)
 monthTempPlot <- ggplot(result)+
-  geom_point(aes(x=Month,y=aveTemp))+
-  scale_colour_manual("Values", values = c(min = "blue", mean = "green",max="red"))+
-  ylab("Temparature")+
+  geom_point(aes(x=Month,y=aveTemp, colour = ""))+
+  scale_colour_manual("Temperature C", values = c(Lowest = "blue", Average = "green", Highest ="red"))+
+  ylab("Temperature C")+
   stat_summary(aes(x=Month,y=minTemp),fun="min",geom="point",shape=20,size=5,color="blue")+
   stat_summary(aes(x=Month,y=maxTemp),fun="max",geom="point",shape=20,size=5,color="red")+
   stat_summary(aes(x=Month,y=aveTemp),fun="mean",geom="point",shape=20,size=5,color="green")+
-  theme(legend.position = "right")
+  theme(legend.position = "right")+
+  ggtitle("Distribution of the temperature from August 2020 to July 2021 monthly")
 monthTempPlot
 ```
-
-
-# temparature plot
+# wind
 ```{r}
-ggplot(resultQuarter, aes(x=quarter,y=avTemp))+
-  geom_point(size = 5, shape = 23, fill = "red")+
-  ylab("Average Temparature")+
-  ggtitle("Distribution of the averge temparature from August 2020 to July 2021")
+monthWindPlot <- ggplot(result)+
+  geom_point(aes(x=Month,y=avWindSpeed, colour = ""))+
+  scale_colour_manual("Wind-Speed", values = c(Minimum = "blue", Average = "green", Maximum="red"))+
+  ylab("Wind Speed KM/h")+
+  stat_summary(aes(x=Month,y=minWind),fun="min",geom="point",shape=20,size=5,color="blue")+
+  stat_summary(aes(x=Month,y=maxWind),fun="max",geom="point",shape=20,size=5,color="red")+
+  stat_summary(aes(x=Month,y=avWindSpeed),fun="mean",geom="point",shape=20,size=5,color="green")+
+  theme(legend.position = "right")+
+  ggtitle("Distribution of wind speed in KM/h from August 2020 to July 2021 monthly")
+monthWindPlot
 ```
-
-# tests
+# humidity
 ```{r}
-sum(is.na(data20to21$X3pm_relative_humidity_...))
-sum(is.na(data20to21$X9am_relative_humidity_...))
-result$minTemp[2]
-min(c(result$minTemp[1], result$minTemp[1+1], result$minTemp[1+2]))
+monthHumidPlot <- ggplot(result)+
+  geom_point(aes(x=Month,y=avHumidity, colour = ""))+
+  scale_colour_manual("Humidity", values = c(Minimum = "blue", Average = "green", Maximum="red"))+
+  ylab("Humidity")+
+  stat_summary(aes(x=Month,y=minHumid),fun="min",geom="point",shape=20,size=5,color="blue")+
+  stat_summary(aes(x=Month,y=maxHumid),fun="max",geom="point",shape=20,size=5,color="red")+
+  stat_summary(aes(x=Month,y=avHumidity),fun="mean",geom="point",shape=20,size=5,color="green")+
+  theme(legend.position = "right")+
+  ggtitle("Distribution of humidity from August 2020 to July 2021 monthly")
+monthHumidPlot
+```
+# quarter
+# temparature
+```{r}
+quarterTempPlot <- ggplot(resultQuarter)+
+  geom_point(aes(x=quarter,y=avTemp, colour = ""))+
+  scale_colour_manual("Temperature C", values = c(Minimum = "blue", Average = "green", Maximum="red"))+
+  ylab("Temperature C")+
+  stat_summary(aes(x=quarter,y=minTemp), fun = "min", geom="point",shape=20,size=5,color="blue")+
+  stat_summary(aes(x=quarter,y=maxTemp), fun = "max", geom="point",shape=20,size=5,color="red")+
+  stat_summary(aes(x=quarter,y=avTemp), fun = "mean", geom="point",shape=20,size=5,color="green")+
+  theme(legend.position = "right")+
+  ggtitle("Distribution of temperature in C from August 2020 to July 2021 quarterly")
+quarterTempPlot
+```
+# wind speed 
+```{r}
+quarterWindPlot <- ggplot(resultQuarter)+
+  geom_point(aes(x=quarter,y=avWind, colour = ""))+
+  scale_colour_manual("Wind Speed KM/h", values = c(Minimum = "blue", Average = "green", Maximum="red"))+
+  ylab("Wind Speed KM/h")+
+  stat_summary(aes(x=quarter,y=minWind), fun = "min", geom="point",shape=20,size=5,color="blue")+
+  stat_summary(aes(x=quarter,y=maxWind), fun = "max", geom="point",shape=20,size=5,color="red")+
+  stat_summary(aes(x=quarter,y=avWind), fun = "mean", geom="point",shape=20,size=5,color="green")+
+  theme(legend.position = "right")+
+  ggtitle("Distribution of wind-speed in KM/h from August 2020 to July 2021 quarterly")
+quarterWindPlot
+```
+# humidity
+```{r}
+quarterHumidityPlot <- ggplot(resultQuarter)+
+  geom_point(aes(x=quarter,y=avHum, colour = ""))+
+  scale_colour_manual("Humidity", values = c(Minimum = "blue", Average = "green", Maximum="red"))+
+  ylab("Humidity")+
+  stat_summary(aes(x=quarter,y=minHum), fun = "min", geom="point",shape=20,size=5,color="blue")+
+  stat_summary(aes(x=quarter,y=maxHum), fun = "max", geom="point",shape=20,size=5,color="red")+
+  stat_summary(aes(x=quarter,y=avHum), fun = "mean", geom="point",shape=20,size=5,color="green")+
+  theme(legend.position = "right")+
+  ggtitle("Distribution of humidity from August 2020 to July 2021 quarterly")
+quarterHumidityPlot
 ```
 
