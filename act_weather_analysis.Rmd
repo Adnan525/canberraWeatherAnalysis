@@ -5,16 +5,23 @@ date: "11/10/2022"
 output: html_document
 ---
 
-# Load the dataset
+# Load the dataset into a dataframe named df
 ```{r}
 library(tidyverse)
+library(ggplot2)
 df <- read.csv("act_weather.csv")
 head(df)
 ```
-# remove the first column
+# remove the first column since it's just a copy of the index value
 ```{r}
 df <- df[-c(1)]
 head(df)
+```
+# chek the data has been loaded correctly
+```{r}
+nrow(df)
+ncol(df)
+str(df)
 ```
 # create a function that takes the column name as a parametre and prints minimum, median, mean and maximum
 ```{r}
@@ -37,7 +44,7 @@ targetColumns <- c("Minimum_temperature",
                   "3pm_Temperature")
 targetColumns <- make.names(targetColumns)
 ```
-# run a loop to get the summary
+# run a loop to get the summary using function getSummary
 ```{r}
 for (columnName in targetColumns)
 {
@@ -52,22 +59,45 @@ averageMinTemp <- df %>%
 head(averageMinTemp)
 ```
 # average of the speed of maximum wind gust per each group of direction
+# grouped by wind direction
 ```{r}
 averageWindGust <- df %>% 
   group_by(Direction_of_maximum_wind_gust) %>% 
   summarise(mean(Speed_of_maximum_wind_gust_.km.h.))
 head(averageWindGust)
 ```
+# highest rainfall month
+```{r}
+highestRainFall <- df %>% 
+  group_by(Month, Year) %>% 
+  summarise(totalRainfall = sum(Rainfall_.mm.))
+highestRainFall[which.max(highestRainFall$totalRainfall),]
+```
+# highest rainfall by year, using highestRainFall data frame created in the previous chunk
+```{r}
+highestRainFallByYear <- highestRainFall %>% 
+  group_by(Year) %>% 
+  summarise(totalRainFall = sum(totalRainfall))
+#By using which.max function got highest rainfall during those years with their index number and by printing the index number got the value for highest rainfall year.
+highestRainFallByYear[which.max(highestRainFallByYear$totalRainFall),]
+```
 # least amount of rainfall or dry month
 ```{r}
 dryMonth <- df %>% 
   group_by(Month, Year) %>% 
   summarise(sumRainfall = sum(Rainfall_.mm.))
+#least amount of rain
+print("Least amount of rain fall :")
 dryMonth[which.min(dryMonth$sumRainfall),]
+#dry month
+print("dry month  where rain fall is 0 :")
+no_rainfall_month <- dryMonth[which(dryMonth$sumRainfall == 0), "Month"]
+no_rainfall_year <- dryMonth[which(dryMonth$sumRainfall == 0), "Year"]
+#none
 ```
-# function to calculate average humidity
+# function to calculate an average between 2 numbers
 ```{r}
-avgHumidity <- function(a, b)
+getAvg <- function(a, b)
 {
   (a+b)/2
 }
@@ -82,11 +112,16 @@ highestHumid2019 <- df %>%
 highestHumid2019[which.max(highestHumid2019$maxHumid),]
 ```
 # August 2020 to July 2021 summary table showing min, max and ave temp, wind speed, humidity for each month, for each quarter
+## getting a subset of df which has all the rows from August 2020 to July 2021 inclusive
 ```{r}
 #get the subset
 data20to21 <- df %>% 
   filter((Year == 2020 & Month >= 8)|(Year == 2021 & Month <= 7))
-
+```
+## wind speed columns has values as "Calm"
+## since only numeric data can be processed and it's not clear what the dataset means by "calm", I will replace them with mean
+## converting the column to numeric and replacing NAs with mean() will solve the issue
+```{r}
 #make numeric
 data20to21$X9am_wind_speed_.km.h. <- as.numeric(data20to21$X9am_wind_speed_.km.h.)
 data20to21$X3pm_wind_speed_.km.h. <- as.numeric(data20to21$X3pm_wind_speed_.km.h.)
@@ -96,8 +131,9 @@ data20to21$X9am_wind_speed_.km.h.[is.na(data20to21$X9am_wind_speed_.km.h.)] <- m
                                                                                     na.rm = TRUE)
 data20to21$X3pm_wind_speed_.km.h.[is.na(data20to21$X3pm_wind_speed_.km.h.)] <- mean(data20to21$X3pm_wind_speed_.km.h., 
                                                                                     na.rm = TRUE)
-
-#create a new data set
+```
+# Getting min, max, average of temparature, wind speed and humidity by month
+```{r}
 result <- data20to21 %>% 
   group_by(Month, Year) %>% 
   summarise(minTemp = min(Minimum_temperature), 
@@ -109,14 +145,18 @@ result <- data20to21 %>%
             avHumidity = mean((X3pm_relative_humidity_... + X9am_relative_humidity_...)/2),
             maxHumid = if (max(X3pm_relative_humidity_...)> max(X9am_relative_humidity_...)) max(X3pm_relative_humidity_...) else max(X9am_relative_humidity_...),
             minHumid = if (min(X3pm_relative_humidity_...)< min(X9am_relative_humidity_...)) min(X3pm_relative_humidity_...) else min(X9am_relative_humidity_...))
-
+```
+# Getting min, max, average of temparature, wind speed and humidity by quarter, a loop that increments by +2 will help
+```{r}
 #quarter
-resultQuarter <- data.frame(matrix(ncol = 9, nrow = 0))
-colnames(resultQuarter) <- c("minTemp", "maxTemp", "avTemp", "minWind", "maxWind", "avWind", "minHum", "maxHum", "avHum")
+resultQuarter <- data.frame(matrix(ncol = 10, nrow = 0))
+colnames(resultQuarter) <- c("quarter", "minTemp", "maxTemp", "avTemp", "minWind", "maxWind", "avWind", "minHum", "maxHum", "avHum")
+quarter = 0
 for (i in c(1,4,7,10))
 {
+  quarter = quarter + 1
   temp <- c()
-  
+  temp <- append(temp, quarter)
   temp <- append(temp, min(c(result$minTemp[i], result$minTemp[i+1], result$minTemp[i+2])))
   temp <- append(temp, max(c(result$maxTemp[i], result$maxTemp[i+1], result$maxTemp[i+2])))
   temp <- append(temp, mean(c(result$aveTemp[i], result$aveTemp[i+1], result$aveTemp[i+2])))
@@ -133,6 +173,30 @@ for (i in c(1,4,7,10))
   
 }
 ```
+# plots month
+# temparature
+```{r}
+result$Month <- as.factor(result$Month)
+monthTempPlot <- ggplot(result)+
+  geom_point(aes(x=Month,y=aveTemp))+
+  scale_colour_manual("Values", values = c(min = "blue", mean = "green",max="red"))+
+  ylab("Temparature")+
+  stat_summary(aes(x=Month,y=minTemp),fun="min",geom="point",shape=20,size=5,color="blue")+
+  stat_summary(aes(x=Month,y=maxTemp),fun="max",geom="point",shape=20,size=5,color="red")+
+  stat_summary(aes(x=Month,y=aveTemp),fun="mean",geom="point",shape=20,size=5,color="green")+
+  theme(legend.position = "right")
+monthTempPlot
+```
+
+
+# temparature plot
+```{r}
+ggplot(resultQuarter, aes(x=quarter,y=avTemp))+
+  geom_point(size = 5, shape = 23, fill = "red")+
+  ylab("Average Temparature")+
+  ggtitle("Distribution of the averge temparature from August 2020 to July 2021")
+```
+
 # tests
 ```{r}
 sum(is.na(data20to21$X3pm_relative_humidity_...))
