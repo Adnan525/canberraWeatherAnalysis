@@ -7,7 +7,7 @@ output: html_document
 
 # Load the dataset into a dataframe named df
 ```{r}
-library(tidyverse)
+library(dplyr)
 library(ggplot2)
 df <- read.csv("act_weather.csv")
 head(df)
@@ -254,4 +254,70 @@ quarterHumidityPlot <- ggplot(resultQuarter)+
   ggtitle("Distribution of humidity from August 2020 to July 2021 quarterly")
 quarterHumidityPlot
 ```
+# climate change over the last 4 years
+## filter data from 2018 to 2021
+```{r}
+targetYears <- filter(df, Year < 2022)
+```
+## fix all the NA or "Calm" values with mean like in data20to21
+```{r}
+#make numeric
+targetYears$X9am_wind_speed_.km.h. <- as.numeric(targetYears$X9am_wind_speed_.km.h.)
+targetYears$X3pm_wind_speed_.km.h. <- as.numeric(targetYears$X3pm_wind_speed_.km.h.)
 
+#fix NAs with mean
+targetYears$X9am_wind_speed_.km.h.[is.na(targetYears$X9am_wind_speed_.km.h.)] <- mean(targetYears$X9am_wind_speed_.km.h., 
+                                                                                    na.rm = TRUE)
+targetYears$X3pm_wind_speed_.km.h.[is.na(targetYears$X3pm_wind_speed_.km.h.)] <- mean(targetYears$X3pm_wind_speed_.km.h., 
+                                                                                    na.rm = TRUE)
+```
+## change month and year to factor
+```{r}
+data_all$Year <- factor(data_all$Year)
+data_all$Month <- factor(data_all$Month)
+```
+# Temparature Analysis
+```{r}
+tempChangeTest <- targetYears %>% 
+  group_by(Year) %>% 
+  summarise(maxTemp = max(Maximum_temperature), minTemp = min(Minimum_temperature))
+  
+  ggplot(tempChangeTest, aes(x = Year, y = maxTemp, colour = "")) +
+  scale_colour_manual("Temperature", values = c(Coldest = "blue", Hottest ="red"))+
+  geom_point()+
+  stat_summary(aes(x=Year,y=minTemp), fun = "min", geom="point",shape=20,size=5,color="blue")+
+  stat_summary(aes(x=Year,y=maxTemp), fun = "max", geom="point",shape=20,size=5,color="red")+
+  theme(legend.position = "right")+
+  ggtitle("Temperature change over 4 years")+
+  ylab("Average Temperature C")+
+  xlab("Year")
+```
+# we can clearly see that over the last 4 years maximum temparature had chnaged in ACT where in 2020 it peaked at 44C from 36.8 in 2020
+#total rain fall
+```{r}
+rainfallTest <- targetYears %>% 
+  group_by(Year) %>% 
+  summarise(sumRainFall = sum(Rainfall_.mm.))
+ggplot(rainfallTest, aes(x = Year, y = sumRainFall))+
+  geom_point(shape=20,size=5,color="red")+
+  geom_line()+
+  ggtitle("Total amount of rainfall in m.m. in each year from 2018 to 2021")+
+  xlab("Year")+
+  ylab("Total Rain fall m.m.")
+```
+# clearly we can see that over 4 years, rainfall has increased rapidly
+# humidity
+```{r}
+humidityTest <- targetYears %>% 
+  group_by(Year) %>% 
+  mutate(avHum = getAvg(X9am_relative_humidity_..., X3pm_relative_humidity_...)) %>% 
+  summarise(avHumYear = mean(avHum))
+ggplot(humidityTest, aes(x = Year, y = avHumYear))+
+  geom_point(shape=20,size=5,color="blue")+
+  geom_line()+
+  ggtitle("Change of humidity over 4 years")+
+  xlab("Year")+
+  ylab("Humidity")
+```  
+# from the humidity plot, humidity increased consistently every year and had a significant jump in 2020 
+#conclusion: From the data, we can conclude that climate-change phenomenon has hit the ACT region in last 4 years and in 2020 it was worse, which is suggested by the temperature, humidity data.
